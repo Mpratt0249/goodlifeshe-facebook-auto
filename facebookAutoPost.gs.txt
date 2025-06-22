@@ -1,0 +1,118 @@
+//FACEBOOK AUTO POST 
+
+/*  ───────────────────────────────────────────────────────────────
+    GOOD LIFE SHE  ▸  Facebook Content Loader
+    - Adds 2 rows per run (Morning & Afternoon) to tab “FB Post”
+    - Non-repeating images, brand-aligned captions
+    - Columns: Date | Post Text | Image Url | Post to FB | Status
+    Spreadsheet ID: 15KiXej64McJiT7utXTnc2QGFirvxwyk7OKk3TYUWKcs
+    ─────────────────────────────────────────────────────────────── */
+function shuffle_(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function createScheduledFacebookPosts() {
+
+  /*–– SETTINGS ––*/
+  const SPREADSHEET_ID = '15KiXej64McJiT7utXTnc2QGFirvxwyk7OKk3TYUWKcs';
+  const TAB_NAME       = 'FB Post';
+  const WEBSITE        = 'https://www.goodlifeshe.com';
+
+  /*–– CAPTIONS BY DAY (feel free to edit / expand) ––*/
+  const captionsByDay = {
+    0: [ // Sunday – Motivational
+      '💭 “Pour into yourself first, then pour into the world.”',
+      '💭 Soft mornings, strong spirit. Glow from the inside out.',
+      '💭 Your wellness story starts with one gentle step.'
+    ],
+    1: [ // Monday – Product spotlight
+      '🌿 Start the week with our Coconut Glow Body Oil — skin food in a bottle.',
+      '🌾 Monday mantra: hydrate, nourish, flourish.',
+      '✨ Kick off the week with our Ritual Dry-Brush. Your lymph system will thank you.'
+    ],
+    2: [ // Tuesday – Wellness tip
+      '🪷 Wellness Tip Tuesday: 5 deep breaths + 5 minutes of silence = instant reset.',
+      '🍵 Sip herbal, feel herbal — try lemon-balm & sage for calm focus.',
+      '📓 Journal your gratitude before bed; watch your glow rise.'
+    ],
+    3: [ // Wednesday – Mid-week encouragement
+      '🔥 Mid-week reminder: confidence is your best skincare product.',
+      '🌸 Bloom wildly, even on Wednesdays.',
+      '👑 Queens don’t rush; they rise.'
+    ],
+    4: [ // Thursday – Community vibe
+      '🌎 Tag a friend who’s on a glow-up journey with you.',
+      '🤎 Sisterhood looks like sharing self-care secrets.',
+      '💬 Comment your fav wellness ritual below!'
+    ],
+    5: [ // Friday – Weekend teaser
+      '✨ Weekend ritual loading… candles, body oils, and beach walks.',
+      '🏖️ Friday feels: barefoot boho & sunshine dreams.',
+      '💧 Hydrate + celebrate your wins this week!'
+    ],
+    6: [ // Saturday – Promo or quote
+      '🛍️ Saturday treat: 10% off site-wide with code SHE10 (today only!).',
+      '💭 “The glow is real when the mind is still.”',
+      '🛒 Restock your skin-love staples this weekend.'
+    ]
+  };
+
+  /*–– IMAGE POOL ––*/
+  const IMAGES = shuffle_([
+    'https://i.imgur.com/ZAqA2yI.png','https://i.imgur.com/cS8xJYx.png','https://i.imgur.com/FidewKu.png',
+    'https://i.imgur.com/IHMj8uC.png','https://i.imgur.com/cGlQiis.png','https://i.imgur.com/Cf9EmYu.png',
+    'https://i.imgur.com/8L4si4G.png','https://i.imgur.com/qHTkl1w.png','https://i.imgur.com/83KorJ0.png',
+    'https://i.imgur.com/IYMwhUi.png','https://i.imgur.com/oDxHjQv.png','https://i.imgur.com/xeupsV9.png',
+    'https://i.imgur.com/Um1jwkJ.png','https://i.imgur.com/U0d84FL.png','https://i.imgur.com/0C95lWa.png',
+    'https://i.imgur.com/YZfsxkC.png','https://i.imgur.com/pM9jwjK.png','https://i.imgur.com/Yxccw5j.png',
+    'https://i.imgur.com/pMmBQFJ.png','https://i.imgur.com/gdn8xMC.png','https://i.imgur.com/RrAg98o.png',
+    'https://i.imgur.com/WxCIElX.png','https://i.imgur.com/9cOsHEP.png','https://i.imgur.com/YjqmfAr.png',
+    'https://i.imgur.com/Nr9lWxU.png','https://i.imgur.com/aMWdRDF.png','https://i.imgur.com/7SkG9xa.png',
+    'https://i.imgur.com/yCUMRUP.png','https://i.imgur.com/5u3eK09.png','https://i.imgur.com/G6aB4ER.png',
+    'https://i.imgur.com/EUcLTsn.png','https://i.imgur.com/xH8bj3M.png','https://i.imgur.com/3dXwQWh.png',
+    'https://i.imgur.com/jzdNjkC.png','https://i.imgur.com/Mh1mdZm.png'
+  ]);
+
+  /*–– SHEET & USED-IMAGE CACHE ––*/
+  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(TAB_NAME);
+  const props = PropertiesService.getScriptProperties();
+  const used  = JSON.parse(props.getProperty('GLS_usedFBImgs') || '[]');
+
+  let pool = IMAGES.filter(url => !used.includes(url));
+  if (pool.length === 0) { pool = [...IMAGES]; props.setProperty('GLS_usedFBImgs', '[]'); }
+
+  /*–– DATE / TIME SETUP ––*/
+  const tz    = Session.getScriptTimeZone();
+  const now   = new Date();
+  const stamp = Utilities.formatDate(now, tz, 'yyyy-MM-dd HH:mm:ss');
+  const day   = now.getDay();                      // 0–6
+  const slot  = (now.getHours() < 12) ? 'Morning' : 'Afternoon'; // label only
+
+  /*–– PICK caption & image ––*/
+  const captionArr = shuffle_(captionsByDay[day]);
+  const caption    = captionArr.pop();
+  const img        = pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+
+  const postText = `${caption}\n\n${WEBSITE}`;
+
+  /*–– Append row ––*/
+  ss.appendRow([
+    stamp,       // Date
+    postText,    // Post Text
+    img,         // Image Url
+    'Yes',       // Post to FB
+    'READY'      // Status
+  ]);
+
+  used.push(img);
+  props.setProperty('GLS_usedFBImgs', JSON.stringify(used));
+
+  Logger.log(`✅ FB (${slot}) post queued: ${postText}`);
+}
+
+/*  ── Add a time-based trigger to run createScheduledFacebookPosts()
+      once or twice per day (e.g., 07:00 & 13:00).                  */
